@@ -1,0 +1,14 @@
+# 运行期数据（会话历史 / 通知库 / cookies / 缓存）——绝不入库
+data/
+data.*/
+**/__pycache__/
+*.py[cod]
+tests/.test-tmp/
+tests/backups/
+
+# 登录凭据（第二课堂 JWT / 门户 cookie）——绝不入库
+afterclass/token.txt
+afterclass/tokens/
+**/token.txt
+*.token
+*.jwt
