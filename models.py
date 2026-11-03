@@ -22,8 +22,6 @@ from datetime import datetime
 from napcat.store import (CharField, DateTimeField, IntegerField, JSONField,
                           Model, TextField)
 
-#: 测试点种类：hack = 专门构造的边界数据；sample = 官方样例
-CASE_KINDS = ("hack", "sample")
 #: 测试点的上限（题面要求 10 组）
 MAX_HACK_CASES = 10
 

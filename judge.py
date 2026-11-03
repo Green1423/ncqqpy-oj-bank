@@ -100,9 +100,6 @@ LANGUAGE_ALIASES = {
     "py": "py", "py3": "py", "python": "py", "python3": "py",
 }
 
-#: 没给语言时按这个顺序试（从最可能的开始，错误信息里也会列出支持的语言）
-DEFAULT_LANGUAGE_ORDER = ("cpp", "py", "c")
-
 
 def resolve_language(raw: str) -> Language:
     """把 `cpp` / `C++` / `py` 这类写法规范化。
@@ -119,14 +116,6 @@ def resolve_language(raw: str) -> Language:
         raise LanguageError(
             f"不支持的语言：{raw}（支持：" + " / ".join(LANGUAGES) + "）")
     return LANGUAGES[canonical]
-
-
-def language_by_source(name: str) -> Optional[Language]:
-    """按源文件名猜语言（用户把代码存成 `a.py` 发上来时用）。"""
-    suffix = Path(str(name or "")).suffix.lower()
-    return {"cpp": LANGUAGES["cpp"], "cc": LANGUAGES["cpp"],
-            "cxx": LANGUAGES["cpp"], "c": LANGUAGES["c"],
-            "py": LANGUAGES["py"]}.get(suffix.lstrip("."))
 
 
 # --------------------------------------------------------------------------

@@ -318,12 +318,6 @@ class ProblemRenderer:
         doc = build_set_page(group, rows, width=self.opt.width)
         return await self.render_html(doc, name=f"set-{group.name}")
 
-    async def render_text(self, title: str, markdown: str) -> str:
-        """渲染任意一段 Markdown（标题 + 正文），返回 PNG 路径。"""
-        inner = (f'<div class="head"><div class="title">{_esc(title)}</div></div>'
-                 + _section("内容", markdown_to_html(markdown)))
-        return await self.render_html(_page(inner, width=self.opt.width),
-                                      name="text")
 
     async def render_html(self, doc: str, *, name: str = "page") -> str:
         """整页 HTML → PNG（两趟截图）。"""

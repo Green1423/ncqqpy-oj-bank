@@ -24,16 +24,13 @@ from .coach import CoachError
 from .models import Problem, Submission
 from .repo import (OJError, add_to_set, cases_of, clear_cases, create_set,
                    delete_problem, delete_set, list_problems, list_sets,
-                   one_line, rank_set, remove_from_set, require_problem,
+                   rank_set, remove_from_set, require_problem,
                    require_set, set_problems)
 from .schemas import (BindSchema, CancelSchema, CaseSchema, CasesSchema,
                       CoachSchema,
                       DelSchema,
                       GenSchema, ListSchema, LuoguSchema, ResultSchema,
                       SetSchema, ShowSchema, SubmitSchema)
-
-#: 列表里一行最多显示多少字（QQ 消息太长会被折叠）
-_PREVIEW = 120
 
 
 def _file_uri(path: str) -> str:
