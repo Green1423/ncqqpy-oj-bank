@@ -97,7 +97,7 @@ int main() { std::cout << "Hello"; }"""
 ## 1.5 谁能用（服务范围绑定）
 
 配置在 `plugins.oj_bank.binding`，口径与 `ai_chat` / `byrdocs` 一致
-（见 `napcat.scope`）：
+（见 `napcat.subscribe`）：
 
 | 层 | 判据 |
 |----|------|

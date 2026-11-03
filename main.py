@@ -21,7 +21,7 @@
 * 群：**只看 `binding.groups`**（不回落框架的 `bound_groups` —— 「监听哪些群」
   与「允许哪些群用」是两件事），为空 = 一个群都不许；
 * 私聊：`binding.users` 是唯一闸门（框架不管私聊），为空 = 一个都不许；
-* **超级用户豁免**（与其它插件同口径，见 `napcat.scope`）—— 否则名单配错时
+* **超级用户豁免**（与其它插件同口径，见 `napcat.subscribe`）—— 否则名单配错时
   连第一条都开不出来。
 
 判题是执行别人的代码，白名单是这里的**第一道**安全边界（第二道是 `review.py`）。
@@ -56,7 +56,7 @@ from .repo import (OJError, add_cases, cases_of, get_problem, list_problems,
                    upsert_problem)
 from .review import CodeReviewer, ReviewOptions
 
-from napcat.scope import Scope, parse_ids
+from napcat.subscribe import Subscription, parse_ids
 
 #: 状态图标（判题结果里的每一组）
 STATUS_ICON = {
@@ -307,7 +307,7 @@ class OJBankPlugin(PluginBase):
         return {
             "data_dir": "",
             # 服务范围：**本插件独立的一份名单**，不读框架的 bound_groups。
-            # 空 = 谁都不用（要开就 `/oj bind add` 显式加，口径见 napcat.scope）。
+            # 空 = 谁都不用（要开就 `/oj bind add` 显式加，口径见 napcat.subscribe）。
             "binding": {"groups": [], "users": []},
             "max_cases": MAX_HACK_CASES,
             "list_page_size": 8,
@@ -495,12 +495,12 @@ class OJBankPlugin(PluginBase):
     # ------------------------------------------------------------------ 服务范围
     @staticmethod
     def _to_ids(raw) -> set[int]:
-        """配置里的列表 → 正整数集合（解析口径见 `napcat.scope.parse_ids`）。"""
+        """配置里的列表 → 正整数集合（解析口径见 `napcat.subscribe.parse_ids`）。"""
         return parse_ids(raw)
 
-    def _scope(self) -> Scope:
-        """服务范围（口径见 `napcat.scope`）：只看 `binding`，空 = 谁都不用。"""
-        return Scope.of(self.config.get("binding"))
+    def _subscription(self) -> Subscription:
+        """服务范围（口径见 `napcat.subscribe`）：只看 `binding`，空 = 谁都不用。"""
+        return Subscription.of(self.config.get("binding"))
 
     def binding_ids(self, key: str) -> set[int]:
         """`binding.groups` / `binding.users` 的当前值。"""
@@ -533,7 +533,7 @@ class OJBankPlugin(PluginBase):
                      chat_id: int) -> tuple[bool, str]:
         """这个聊天是否在服务范围内。返回 `(允许, 回绝原因)`。
 
-        白名单口径与其它插件一致（见 `napcat.scope`）：**只看本插件自己的
+        白名单口径与其它插件一致（见 `napcat.subscribe`）：**只看本插件自己的
         `binding`，空 = 谁都不用，不回落框架 `bound_groups`**；群与私聊是两条
         独立通道（群开通 = 全群可用；私聊按人开通），谁也不能替代谁。
 
@@ -544,12 +544,12 @@ class OJBankPlugin(PluginBase):
         uid = int(user_id)
         if self.perm.is_superuser(uid):
             return True, ""                  # 豁免：防止白名单把自己锁在外面
-        scope = self._scope()
+        subscription = self._subscription()
         groups = self.bound_groups()
         users = self.binding_ids("users")
 
         if chat_kind == "group":
-            if scope.group_ok(chat_id):
+            if subscription.group_ok(chat_id):
                 return True, ""
             if not groups:
                 return False, (f"本群没有开通题库服务（{hint}.groups 为空）。"
@@ -557,7 +557,7 @@ class OJBankPlugin(PluginBase):
             return False, (f"本群（{chat_id}）没有开通题库服务。"
                            f"联系管理员把它加到 {hint}.groups。")
 
-        if scope.user_ok(uid):
+        if subscription.user_ok(uid):
             return True, ""
         if not users:
             return False, (f"私聊没有开通题库服务（{hint}.users 为空）。"

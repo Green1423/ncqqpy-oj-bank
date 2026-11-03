@@ -103,7 +103,7 @@
 | `max_cases` | 每题最多几组测试点（默认 10，与题面要求一致） |
 | `list_page_size` | `/oj list` 每页几条（1..20） |
 
-> 绑定命令的语义跟 `ai_chat` / `byrdocs` 一致（见 `napcat.scope`），**群名单不回落框架的
+> 绑定命令的语义跟 `ai_chat` / `byrdocs` 一致（见 `napcat.subscribe`），**群名单不回落框架的
 > `bound_groups`** —— 那是「机器人监听哪些群」，与「允许哪些群用本插件」是两件事。
 > **超级用户豁免**（名单配错时仍能进来改；用 `/oj bind` 开通，或改这里）。运行期用
 > `/oj bind list|add|del` 管理，会写回本段。
