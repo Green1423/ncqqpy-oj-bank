@@ -289,18 +289,6 @@ async def _fetch_bytes(file_manager, api, *, file=None, file_id=None,
             raise
         except Exception:             # noqa: BLE001 - 平台差异大，退下一档
             pass
-    if api is not None:
-        try:
-            chunks = []
-            async for chunk in api.download_file_stream(
-                    file=file, file_id=file_id, timeout=timeout):
-                _bounded(chunks, chunk)
-            if chunks:
-                return b"".join(chunks)
-        except CodeFileError:
-            raise
-        except Exception:             # noqa: BLE001
-            pass
     return await download(file, limit=limit, timeout=timeout, roots=roots)
 
 
@@ -352,11 +340,13 @@ async def from_segment(segment: dict, api: Any, *, limit: int,
 
     if raw is None and file_id:
         # 退路：有些实现只有 `get_file` 里才有可用的 url / 落盘路径
-        try:
-            info = await api.get_file(file_id=file_id)
-        except Exception as e:  # noqa: BLE001 - 平台差异大，统一转成人话
-            info = None
-            last_error = CodeFileError(f"读取文件信息失败：{type(e).__name__}")
+        info = None
+        if file_manager is not None:
+            try:
+                info = await file_manager.get_file(file_id=file_id)
+            except Exception as e:  # noqa: BLE001 - 平台差异大，统一转成人话
+                last_error = CodeFileError(
+                    f"读取文件信息失败：{type(e).__name__}")
         if info is not None:
             name = name or _info_name(info)
             source = _info_url(info) or _info_path(info)
@@ -393,10 +383,10 @@ async def from_group_upload(event: Any, api: Any, *, limit: int,
         raise CodeFileError(f"文件太大（{declared} 字节 > {limit} 字节）")
     file_id = _id_of(info)
     url = ""
-    if file_id:
+    if file_id and file_manager is not None:
         try:
-            got = await api.get_group_file_url(str(getattr(event, "group_id", "")),
-                                               file_id)
+            got = await file_manager.get_group_file_url(
+                str(getattr(event, "group_id", "")), file_id)
         except Exception:  # noqa: BLE001 - 有些实现没有这个 action
             got = None
         if isinstance(got, dict):
@@ -418,10 +408,12 @@ async def from_group_upload(event: Any, api: Any, *, limit: int,
 
     # 退路：当普通文件查一次（拿 url / 落盘路径）
     if file_id:
-        try:
-            got = await api.get_file(file_id=file_id)
-        except Exception:  # noqa: BLE001
-            got = None
+        got = None
+        if file_manager is not None:
+            try:
+                got = await file_manager.get_file(file_id=file_id)
+            except Exception:  # noqa: BLE001
+                got = None
         if got is not None:
             name = name or _info_name(got)
             source = _info_url(got) or _info_path(got)

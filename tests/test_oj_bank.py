@@ -146,22 +146,26 @@ class FakeApi:
         with open(path, "rb") as fh:      # 真实路径 / 不存在的路径都按真实行为
             return fh.read()
 
-    async def iter_file_stream(self, *, file=None, file_id=None,
-                               chunk_size=65536, timeout=60.0):
+    async def _call(self, action, params=None, *, throttle=True):
+        params = dict(params or {})
+        if action == "get_file":
+            return await self.get_file(file=params.get("file"),
+                                       file_id=params.get("file_id"))
+        if action == "get_group_file_url":
+            return await self.get_group_file_url(params.get("group_id"),
+                                                 params.get("file_id"))
+        raise RuntimeError(f"FakeApi 未实现 action: {action}")
+
+    async def _stream_packets(self, action, params, timeout=60.0):
+        # FileManager 的流式下载最终走这里；返回 file_info / file_chunk / complete
         self.stream_calls += 1
-        data = self._file_bytes(file, file_id)
+        data = self._file_bytes(params.get("file"), params.get("file_id"))
+        chunk_size = int(params.get("chunk_size") or 65536)
         yield {"data_type": "file_info", "file_size": len(data)}
         for i in range(0, len(data), chunk_size):
             yield {"data_type": "file_chunk",
                    "data": base64.b64encode(data[i:i + chunk_size]).decode()}
         yield {"data_type": "file_complete"}
-
-    async def download_file_stream(self, *, file=None, file_id=None,
-                                   chunk_size=65536, timeout=60.0):
-        self.stream_calls += 1          # FileManager.download_stream 走的就是这条
-        data = self._file_bytes(file, file_id)
-        for i in range(0, len(data), chunk_size):
-            yield data[i:i + chunk_size]
 
     async def send_group_msg(self, group_id, message, **kwargs):
         self.sent.append(("group", str(group_id), message))
@@ -1104,7 +1108,8 @@ async def test_file_submit(plugin, cmds, api):
     api.files["f-local"] = ("sol.py", path)
     seg = {"type": "file", "data": {"file_id": "f-local", "name": "sol.py"}}
     got = await from_segment(seg, api, limit=10000,
-                             roots=plugin.file_roots)
+                             roots=plugin.file_roots,
+                             file_manager=FileManager(api))
     check("get_file 给落盘路径也能取", got.content == py_src, got.content[:40])
 
     # ① 命令消息自带文件：语言按后缀推断，结果里带文件名
@@ -1170,7 +1175,8 @@ async def test_file_submit(plugin, cmds, api):
     api.files["f-esc"] = ("esc.cpp", str(work / "esc.cpp"))
     from plugins.oj_bank.codefile import from_segment
     got = await from_segment({"data": {"file_id": "f-esc", "name": "esc.cpp"}},
-                             api, limit=plugin.max_file_bytes)
+                             api, limit=plugin.max_file_bytes,
+                             file_manager=FileManager(api))
     check("文件内容一个字节都不动（\\t / \\n 保留）",
           "\\t" in got.content and "\\n" in got.content, repr(got.content))
 
@@ -1178,11 +1184,12 @@ async def test_file_submit(plugin, cmds, api):
     from plugins.oj_bank.codefile import from_segment as _from_segment
     got2 = await _from_segment(
         {"data": {"url": "http://127.0.0.1:1/expired", "file_id": "f-py",
-                  "name": "sol.py"}}, api, limit=plugin.max_file_bytes)
+                  "name": "sol.py"}}, api, limit=plugin.max_file_bytes,
+        file_manager=FileManager(api))
     check("过期 URL 退回 get_file", got2.content == py_src, got2.content[:60])
     try:
         await _from_segment({"data": {"url": "javascript:alert(1)"}}, api,
-                            limit=1024)
+                            limit=1024, file_manager=FileManager(api))
         check("非 http(s) 地址被拒", False, "居然通过")
     except CodeFileError:
         check("非 http(s) 地址被拒", True)
