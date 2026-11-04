@@ -126,7 +126,7 @@ git clone https://github.com/Green1423/ncqqpy-oj-bank plugins/oj_bank
 | `OJ_REVIEW_API_KEY` | AI 代码审查的 key（也可写进 `config.json → plugins.oj_bank.review.ai.api_key`；环境变量优先） |
 
 
-详细文档：[`docs/oj-bank/README.md`](docs/oj-bank/README.md)。
+详细文档：[`docs/README.md`](docs/README.md)。
 ## 测试
 
 ```bash
