@@ -12,7 +12,7 @@ cd /path/to/ncqqpy && python -B tests/test_oj_bank.py
 
 | 套件 | 覆盖 |
 |------|------|
-| `test_oj_bank.py` |  |
+| `test_oj_bank.py` | 插件验收：洛谷 / 题库 / 判题 / 审查 / 出图 / 题组 / 白名单 |
 
 ## 说明
 
